@@ -1,9 +1,11 @@
-@import "../../styles/responsive.scss";
+@use "../../styles/responsive.scss";
 
 .single {
   display: flex;
-
-  @include xl{
+  background-color: white;
+  color: black;
+  // background-color:white;
+  @include responsive.xl{
     flex-direction: column;
     gap: 50px;
   }
@@ -49,7 +51,7 @@
       border: 0.5px solid gray;
       margin: 20px 0px;
 
-      @include md{
+      @include responsive.md{
         display: none;
       }
     }
@@ -59,7 +61,7 @@
       width: 80%;
       height: 400px;
 
-      @include md{
+      @include responsive.md{
         display: none;
       }
     }
@@ -96,7 +98,7 @@
           padding: 15px;
           background-color: #f45b6810;
 
-          @include md{
+          @include responsive.md{
             min-width: 250px;
           }
 

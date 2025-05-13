@@ -1,13 +1,11 @@
-import {
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import * as React from 'react';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Box from '@mui/material/Box';
 import "./single.scss";
+import ProductForm from './product-basic';
+import BundleProductMappingMaster from './bundleProduct';
+import ProductVariantMaster from './variant';
 
 type Props = {
   id: number;
@@ -21,72 +19,63 @@ type Props = {
   activities?: { time: string; text: string }[];
 };
 
-const Single = (props: Props) => {
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function CustomTabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
   return (
-    <div className="single">
-      <div className="view">
-        <div className="info">
-          <div className="topInfo">
-            {props.img && <img src={props.img} alt="" />}
-            <h1>{props.title}</h1>
-            <button>Update</button>
-          </div>
-          <div className="details">
-            {Object.entries(props.info).map((item) => (
-              <div className="item" key={item[0]}>
-                <span className="itemTitle">{item[0]}</span>
-                <span className="itemValue">{item[1]}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <hr />
-        {props.chart && (
-          <div className="chart">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                width={500}
-                height={300}
-                data={props.chart.data}
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                {props.chart.dataKeys.map((dataKey) => (
-                  <Line
-                    type="monotone"
-                    dataKey={dataKey.name}
-                    stroke={dataKey.color}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </div>
-      <div className="activities">
-        <h2>Latest Activities</h2>
-        {props.activities && (
-          <ul>
-            {props.activities.map((activity) => (
-              <li key={activity.text}>
-                <div>
-                  <p>{activity.text}</p>
-                  <time>{activity.time}</time>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
+  );
+}
+
+function a11yProps(index: number) {
+  return {
+    id: `simple-tab-${index}`,
+    'aria-controls': `simple-tabpanel-${index}`,
+  };
+}
+
+const Single = (props: Props) => {
+  console.log(props);
+   const [value, setValue] = React.useState(0);
+  
+    const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
+      setValue(newValue);
+    };
+  return (
+    <div className='single'>
+    <Box sx={{ width: '100%' }}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
+              <Tab label="General" {...a11yProps(0)} />
+              <Tab label="Variants" {...a11yProps(1)} />
+              <Tab label="Bundle Product" {...a11yProps(2)} />
+            </Tabs>
+          </Box>
+          <CustomTabPanel value={value} index={0}>
+          <ProductForm></ProductForm>
+          </CustomTabPanel>
+          <CustomTabPanel value={value} index={1}>
+            <ProductVariantMaster/>
+          </CustomTabPanel>
+          <CustomTabPanel value={value} index={2}>
+          <BundleProductMappingMaster/>
+          </CustomTabPanel>
+        </Box>
+  </div>
   );
 };
 

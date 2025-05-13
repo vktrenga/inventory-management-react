@@ -1,10 +1,10 @@
-@import "../../styles/responsive.scss";
+@use "../../styles/responsive.scss";
 
 .topBox {
   h1 {
     margin-bottom: 20px;
 
-    @include xxl{
+    @include responsive.xxl{
       font-size: 24px;
     }
   }
@@ -26,10 +26,10 @@
           border-radius: 50%;
           object-fit: cover;
 
-          @include xxl{
+          @include responsive.xxl{
             display: none;
           }
-          @include lg{
+          @include responsive.lg{
             display: block;
           }
         }
@@ -46,10 +46,10 @@
           .email {
             font-size: 12px;
 
-            @include xxl{
+            @include responsive.xxl{
               display: none;
             }
-            @include lg{
+            @include responsive.lg{
               display: block;
             }
           }
