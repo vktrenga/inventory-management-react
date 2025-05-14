@@ -66,8 +66,8 @@ const Products = () => {
 
   const { isLoading, data } = useQuery({
     queryKey: ["allproducts"],
-    queryFn: () =>
-      fetch("https://dummyjson.com/products?limit=10").then((res) =>
+    queryFn: async () =>
+      await fetch("http://localhost:5173/api/products").then((res) =>
         res.json()
       ),
   });
