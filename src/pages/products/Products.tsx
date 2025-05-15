@@ -3,7 +3,7 @@ import "./Products.scss";
 import DataTable from "../../components/dataTable/DataTable";
 import Add from "../../components/add/Add";
 import { GridColDef } from "@mui/x-data-grid";
-import { products } from "../../data";
+import { useQuery } from "@tanstack/react-query";
 
 const columns: GridColDef[] = [
   { field: "id", headerName: "ID", width: 90 },
@@ -12,7 +12,7 @@ const columns: GridColDef[] = [
     headerName: "Image",
     width: 100,
     renderCell: (params) => {
-      return <img src={params.row.img || "/noavatar.png"} alt="" />;
+      return <img src={params.row.thumbnail || "/noavatar.png"} alt="" />;
     },
   },
   {
@@ -32,9 +32,10 @@ const columns: GridColDef[] = [
     type: "string",
     headerName: "Price",
     width: 200,
+    valueFormatter: (value, row) => Number(row.price),
   },
   {
-    field: "producer",
+    field: "brand",
     headerName: "Producer",
     type: "string",
     width: 200,
@@ -44,9 +45,14 @@ const columns: GridColDef[] = [
     headerName: "Created At",
     width: 200,
     type: "string",
+    valueGetter: (value, row) => row.meta.createdAt,
+    renderCell: (params) => {
+      const date = new Date(params.value);
+      return date.toLocaleString();
+    },
   },
   {
-    field: "inStock",
+    field: "stock",
     headerName: "In Stock",
     width: 150,
     type: "boolean",
@@ -58,13 +64,13 @@ const Products = () => {
 
   // TEST THE API
 
-  // const { isLoading, data } = useQuery({
-  //   queryKey: ["allproducts"],
-  //   queryFn: () =>
-  //     fetch("http://localhost:8800/api/products").then(
-  //       (res) => res.json()
-  //     ),
-  // });
+  const { isLoading, data } = useQuery({
+    queryKey: ["allproducts"],
+    queryFn: async () =>
+      await fetch("http://localhost:5173/api/products").then((res) =>
+        res.json()
+      ),
+  });
 
   return (
     <div className="products">
@@ -72,14 +78,13 @@ const Products = () => {
         <h1>Products</h1>
         <button onClick={() => setOpen(true)}>Add New Products</button>
       </div>
-      <DataTable slug="products" columns={columns} rows={products} />
       {/* TEST THE API */}
 
-      {/* {isLoading ? (
+      {isLoading ? (
         "Loading..."
       ) : (
-        <DataTable slug="products" columns={columns} rows={data} />
-      )} */}
+        <DataTable slug="products" columns={columns} rows={data.products} />
+      )}
       {open && <Add slug="product" columns={columns} setOpen={setOpen} />}
     </div>
   );
