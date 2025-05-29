@@ -5,9 +5,10 @@ import {
 } from "@mui/x-data-grid";
 import "./dataTable.scss";
 import { Link } from "react-router-dom";
-// import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteProduct } from "../../api/productApi";
 
 type Props = {
+  deletecallback(id: any): void;
   columns: GridColDef[];
   rows: object[];
   slug: string;
@@ -15,25 +16,8 @@ type Props = {
 
 const DataTable = (props: Props) => {
 
-  // TEST THE API
 
-  // const queryClient = useQueryClient();
-  // // const mutation = useMutation({
-  // //   mutationFn: (id: number) => {
-  // //     return fetch(`http://localhost:8800/api/${props.slug}/${id}`, {
-  // //       method: "delete",
-  // //     });
-  // //   },
-  // //   onSuccess: ()=>{
-  // //     queryClient.invalidateQueries([`all${props.slug}`]);
-  // //   }
-  // // });
 
-  const handleDelete = (id: number) => {
-    //delete the item
-    console.log(id);
-    // mutation.mutate(id)
-  };
 
   const actionColumn: GridColDef = {
     field: "action",
@@ -45,7 +29,7 @@ const DataTable = (props: Props) => {
           <Link to={`/${props.slug}/${params.row.id}`}>
             <img src="/view.svg" alt="" />
           </Link>
-          <div className="delete" onClick={() => handleDelete(params.row.id)}>
+          <div className="delete" onClick={() => props.deletecallback(params.row.id)}>
             <img src="/delete.svg" alt="" />
           </div>
         </div>
@@ -73,7 +57,7 @@ const DataTable = (props: Props) => {
             quickFilterProps: { debounceMs: 500 },
           },
         }}
-        pageSizeOptions={[5,10]}
+        pageSizeOptions={[5,10,15,20,25,50,100]}
         checkboxSelection
         disableRowSelectionOnClick
         disableColumnFilter

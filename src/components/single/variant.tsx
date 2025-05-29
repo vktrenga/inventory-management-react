@@ -1,75 +1,110 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
-   Typography, TextField, Button, Box,
-  Grid,  Table, TableBody, TableCell,
+  Typography, TextField, Button, Box,
+  Grid, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  ListItemText,
-  Checkbox,
-  SelectChangeEvent
+  FormControl, InputLabel, Select, MenuItem,
+  ListItemText, Checkbox, SelectChangeEvent
 } from '@mui/material';
-// import { Add, Delete } from '@mui/icons-material';
-
-
+import { useVaraintAttributes, useVaraintAttributesValues } from '../../hooks/useMaster';
 
 export default function ProductVariantMaster() {
-  let options = [{ "Size": ["S", "M", "L"] }, { "Color": ["Red", "Blue", "Green"] }, { "Material": ["Cotton", "Polyester"] }];
   const staticOption = ["Price"];
-
-  const [rows, setRows] = useState<Record<string, string>[]>([]);
-  const [variantAttributes, setvariantAttributes] = useState<Record<string, string>>({});
+  const [rows, setRows] = useState<any[]>([]);
+  const [selectedVariantAttributesList, setSelectedVariantAttributes] = useState<Record<string, any>[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [attributesListData, setAttributesListData] = useState<any[]>([]);
+  const [attributesValueListData, setAttributesValueListData] = useState<any | null>(null);
+  const [mergedAttributesValues, setMergedAttributesValues] = useState<any[]>([]);
 
-  const variantAttributesValues = (attributesKey: string): string[] => {
-    for(let i = 0; i < options.length; i++) {
-      const option = options[i];
-      const key: string = Object.keys(option)[0];
-      if (key === attributesKey) {
-        return option[key as keyof typeof option] || []; // Provide a default empty array
-      }
-    }
-    return []
-  }
-  const handleChange = (event: any) => {
-    setSelectedOptions(event.target.value);
-  };
+  const attributesList = useVaraintAttributes();
+  const attributesValueList = useVaraintAttributesValues();
+
   useEffect(() => {
-    const variantAttribute = selectedOptions.reduce((acc, option) => {
-      acc[option] = '';
-      return acc;
-    }, {} as Record<string, string>);
+    if (attributesList?.data?.data) {
+      setAttributesListData(attributesList.data.data.data);
+    } 
+  }, [attributesList]);
+
+  useEffect(() => {
+    if (attributesValueList?.data?.data) {
+      setAttributesValueListData(attributesValueList.data.data.data);
+    }
+  }, [attributesValueList]);
+
+  useEffect(() => {
+    if (attributesValueListData && attributesListData) {
+      const valuesMap: { [key: string]: { name: string; id: string }[] } = {};
+
+      attributesValueListData.forEach((val: any) => {
+        if (!valuesMap[val.variant_id]) {
+          valuesMap[val.variant_id] = [];
+        }
+        valuesMap[val.variant_id].push({
+          name: val.name,
+          id: val.id.toString(),
+        });
+      });
+
+      const merged = attributesListData.map((attr: any) => ({
+        attributes_name: attr.name,
+        id: attr.id.toString(),
+        values: valuesMap[attr.id] || [],
+      }));
+      setMergedAttributesValues(merged);
+    }
+  }, [attributesValueListData, attributesListData]);
+
+  const handleChange = (event: SelectChangeEvent<string[]>) => {
+    const selectedIds = event.target.value as string[];
+    setSelectedOptions(selectedIds);
+  };
+
+  useEffect(() => {
+    const updatedVariantAttributesList = selectedOptions.map((variantId) => {
+      const mergedData = mergedAttributesValues.find((item) => item.id === variantId);
+      return {
+        id: variantId,
+        name: mergedData?.attributes_name || '',
+        values: mergedData?.values || [],
+      };
+    });
 
     if (selectedOptions.length > 0) {
       staticOption.forEach((option) => {
-        variantAttribute[option] = '';
+        updatedVariantAttributesList.push({
+          id: option,
+          name: option,
+          values: [],
+        });
       });
     }
+
     setRows([]);
-    setvariantAttributes(variantAttribute);
-  }, [selectedOptions]);
-
-
-
+    setSelectedVariantAttributes(updatedVariantAttributesList);
+  }, [selectedOptions, mergedAttributesValues]);
   useEffect(() => {
-    return setRows(JSON.parse(JSON.stringify([variantAttributes])));
-  }, [variantAttributes]);
+    if (selectedVariantAttributesList.length > 0) {
+      handleAddRow();
+    }
+  }, [selectedVariantAttributesList]);
+  const handleAddRow = useCallback(() => {
+    setRows((prevRows) => [...prevRows, {}]);
+  }, []);
 
-  const handleVariantAttributesChange = (index: any, event: SelectChangeEvent<string> | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, attributesKey: string) => {
+  const handleVariantAttributesChange = useCallback(
+    (index: number, event: SelectChangeEvent<string> | React.ChangeEvent<HTMLInputElement>, attributesKey: string) => {
       const { value } = event.target;
-      const updatedRows = [...rows];
-      if (updatedRows[index]) { 
-        updatedRows[index][attributesKey] = value;
-      }
-      setRows(updatedRows);
-    };
-  
-  const handleAddRow = () => {
-    setRows([...rows, { ...variantAttributes }]);
-  };
-
+      setRows((prevRows) => {
+        const updatedRows = [...prevRows];
+        if (updatedRows[index]) {
+          updatedRows[index][attributesKey] = value;
+        }
+        return updatedRows;
+      });
+    },
+    []
+  );
 
   return (
     <Box
@@ -86,9 +121,9 @@ export default function ProductVariantMaster() {
       <Typography variant="h5" gutterBottom>
         Variant
       </Typography>
-      <form >
-        <Grid container spacing={2} >
-          <Grid size={12} >
+      <form>
+        <Grid container spacing={2}>
+          <Grid size = {12}>
             <FormControl fullWidth>
               <InputLabel id="multi-select-label">Variant Attributes</InputLabel>
               <Select
@@ -96,81 +131,82 @@ export default function ProductVariantMaster() {
                 multiple
                 value={selectedOptions}
                 onChange={handleChange}
-                renderValue={(selected) => selected.join(", ")}
+                renderValue={(selected) =>
+                  selected
+                    .map((id) => mergedAttributesValues.find((item) => item.id === id)?.attributes_name)
+                    .join(", ")
+                }
               >
-                {options.map((item) => {
-                  const key: string = Object.keys(item)[0];
-                  return (
-                    <MenuItem key={key} value={key}>
-                      <Checkbox checked={selectedOptions.indexOf(key) > -1} />
-                      <ListItemText primary={key} />
-                    </MenuItem>
-                  );
-                })}
+                {mergedAttributesValues.map((item) => (
+                  <MenuItem key={item.id} value={item.id}>
+                    <Checkbox checked={selectedOptions.includes(item.id)} />
+                    <ListItemText primary={item.attributes_name} />
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
                   <TableRow>
-                    {variantAttributes && Object.keys(variantAttributes).length > 0 && (
-                      <>
-                        {selectedOptions.map((option) => (
-                          <TableCell key={option}>{option}</TableCell>
-                        ))}
-                        <TableCell>Price</TableCell>
-                      </>
-                    )}
-
+                    {selectedVariantAttributesList.map((attr) => (
+                      <TableCell key={attr.id}>{attr.name}</TableCell>
+                    ))}
+                    {/* <TableCell>Actions</TableCell> */}
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.length > 0 && rows.map((row, index) => {
-                    const attributesKeys: string[] = Object.keys(row);
-                    return (
-                      <TableRow key={index}>
-                        {attributesKeys.map((attributesKey) => (
-                          <TableCell key={attributesKey}>
-                            
-                            {!staticOption.includes(String(attributesKey)) ? (
-                              <Select
-                                onChange={(event: SelectChangeEvent<string>) => handleVariantAttributesChange(index, event, attributesKey)}
-                                name={attributesKey}
-                                fullWidth
-                              >
-
-{variantAttributesValues(attributesKey).map((item) => {
-                  return (
-                    <MenuItem key={item} value={item}>
-                      <Checkbox checked={row[attributesKey] === item} />
-                      <ListItemText primary={item} />
-                    </MenuItem>
-                  );
-                })}
-                              </Select>
-                            ) : (
-                              <TextField
-                                value={row[attributesKey]}
-                                onChange={(event) => handleVariantAttributesChange(index, event, attributesKey)}
-                                placeholder={attributesKey}
-                                name={attributesKey}
-                                fullWidth
-                              />
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    );
-                  })}
-
-
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      <Button onClick={handleAddRow} variant="contained" color="primary">
-                        + Add Row
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                  {rows.map((row, index) => (
+                    <TableRow key={index}>
+                      {selectedVariantAttributesList.map((attr) => (
+                        <TableCell key={attr.id}>
+                          {!staticOption.includes(attr.name) ? (
+                            <Select
+                              value={row[attr.name] || ''}
+                              onChange={(event) =>
+                                handleVariantAttributesChange(index, event, attr.name)
+                              }
+                              fullWidth
+                            >
+                              {attr.values.map((value: any) => (
+                                <MenuItem key={value.id} value={value.id}>
+                                  {value.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          ) : (
+                            <TextField
+                              value={row[attr.name] || ''}
+                              onChange={(event) =>
+                                handleVariantAttributesChange(index, event, attr.name)
+                              }
+                              placeholder={attr.name}
+                              fullWidth
+                            />
+                          )}
+                        </TableCell>
+                      ))}
+                      <TableCell>
+{rows.length === index+1 ? (
+ 
+  <Button onClick={handleAddRow} variant="contained" color="primary">
++ Add Row
+</Button>
+) :   <Button
+    onClick={() =>
+      setRows((prevRows) => prevRows.filter((_, i) => i !== index))
+    }
+    variant="contained"
+    color="secondary"
+  >
+    Remove 
+  </Button> 
+}
+                        
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  
                 </TableBody>
               </Table>
             </TableContainer>
